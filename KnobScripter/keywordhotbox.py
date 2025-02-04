@@ -7,15 +7,15 @@ adrianpueyo.com
 import nuke
 from functools import partial
 
-try:
-    if nuke.NUKE_VERSION_MAJOR < 11:
-        from PySide import QtCore, QtGui, QtGui as QtWidgets
-        from PySide.QtCore import Qt
-    else:
-        from PySide2 import QtWidgets, QtGui, QtCore
-        from PySide2.QtCore import Qt
-except ImportError:
-    from Qt import QtCore, QtGui, QtWidgets
+if nuke.NUKE_VERSION_MAJOR >= 16:
+    from PySide6 import QtCore, QtGui, QtWidgets
+    from PySide6.QtCore import Qt
+elif nuke.NUKE_VERSION_MAJOR < 11:
+    from PySide import QtCore, QtGui, QtGui as QtWidgets
+    from PySide.QtCore import Qt
+else:
+    from PySide2 import QtWidgets, QtGui, QtCore
+    from PySide2.QtCore import Qt
 
 
 class KeywordHotbox(QtWidgets.QDialog):
@@ -69,11 +69,8 @@ class KeywordHotbox(QtWidgets.QDialog):
         else:
             category_help = ""
 
-        if nuke.NUKE_VERSION_MAJOR < 11:
-            master_layout.setContentsMargins(0, 0, 0, 0)
-        else:
-            master_layout.setMargin(0)
-            master_layout.setSpacing(0)
+        master_layout.setContentsMargins(0, 0, 0, 0)
+        master_layout.setSpacing(0)
 
         self.setToolTip("<h2>{}</h2>".format(self.category) + category_help)
 

@@ -1,21 +1,23 @@
 # -*- coding: utf-8 -*-
-""" Utils: KnobScripter's utility functions
+"""Utils: KnobScripter's utility functions
 
 utils.py contains utility functions that can potentially be helpful for multiple ks modules.
 
 adrianpueyo.com
 
 """
+
 import nuke
 
 from KnobScripter import config
-try:
-    if nuke.NUKE_VERSION_MAJOR < 11:
-        from PySide import QtGui as QtWidgets
-    else:
-        from PySide2 import QtWidgets
-except ImportError:
-    from Qt import QtWidgets
+
+if nuke.NUKE_VERSION_MAJOR >= 16:
+    from PySide6 import QtWidgets
+elif nuke.NUKE_VERSION_MAJOR < 11:
+    from PySide import QtGui as QtWidgets
+else:
+    from PySide2 import QtWidgets
+
 
 def remove_comments_and_docstrings(source):
     """
@@ -25,6 +27,7 @@ def remove_comments_and_docstrings(source):
     TODO check Unused?
     """
     import cStringIO, tokenize
+
     io_obj = cStringIO.StringIO(source)
     out = ""
     prev_toktype = tokenize.INDENT
@@ -39,7 +42,7 @@ def remove_comments_and_docstrings(source):
         if start_line > last_lineno:
             last_col = 0
         if start_col > last_col:
-            out += (" " * (start_col - last_col))
+            out += " " * (start_col - last_col)
         if token_type == tokenize.COMMENT:
             pass
         elif token_type == tokenize.STRING:
@@ -59,7 +62,9 @@ def killPaneMargins(widget_object):
     if widget_object:
         target_widgets = set()
         target_widgets.add(widget_object.parentWidget().parentWidget())
-        target_widgets.add(widget_object.parentWidget().parentWidget().parentWidget().parentWidget())
+        target_widgets.add(
+            widget_object.parentWidget().parentWidget().parentWidget().parentWidget()
+        )
 
         for widget_layout in target_widgets:
             try:
@@ -70,7 +75,7 @@ def killPaneMargins(widget_object):
 
 def findSE():
     for widget in QtWidgets.QApplication.allWidgets():
-        if widget.metaObject().className() == 'Nuke::NukeScriptEditor':
+        if widget.metaObject().className() == "Nuke::NukeScriptEditor":
             return widget
 
 
@@ -81,19 +86,20 @@ def findSEInput(se):
         return None
     splitter = splitter[0]
     for widget in splitter.children():
-        if widget.metaObject().className() == 'Foundry::PythonUI::ScriptInputWidget':
+        if widget.metaObject().className() == "Foundry::PythonUI::ScriptInputWidget":
             return widget
     return None
 
 
-def filepath_version_up(filepath,find_next_available=True):
-    '''
+def filepath_version_up(filepath, find_next_available=True):
+    """
     Return versioned up version of filepath.
     @param find_next_available: whether to find the next version that doesn't exist, or simply return the version +1
     @return: versioned up filepath or False
-    '''
+    """
     import re
     import os
+
     filepath_re = r"([_.]v)([\d]+)([._]+)"
     version_search = re.search(filepath_re, filepath)
     if not version_search:
@@ -103,7 +109,11 @@ def filepath_version_up(filepath,find_next_available=True):
         padding = len(version_str)
         version = int(version_str)
         while True:
-            new_path = re.sub(filepath_re, "\g<1>"+str(version+1).zfill(padding)+"\g<3>", filepath)
+            new_path = re.sub(
+                filepath_re,
+                "\g<1>" + str(version + 1).zfill(padding) + "\g<3>",
+                filepath,
+            )
             if not find_next_available or not os.path.exists(new_path):
                 return new_path
             version += 1
@@ -118,7 +128,7 @@ def findSEConsole(se=None):
         return None
     splitter = splitter[0]
     for widget in splitter.children():
-        if widget.metaObject().className() == 'Foundry::PythonUI::ScriptOutputWidget':
+        if widget.metaObject().className() == "Foundry::PythonUI::ScriptOutputWidget":
             return widget
     return None
 
@@ -134,39 +144,45 @@ def findSERunBtn(se):
 
 
 def setSEConsoleChanged():
-    ''' Sets nuke's SE console textChanged event to change knobscripters too. '''
+    """Sets nuke's SE console textChanged event to change knobscripters too."""
     se_console = findSEConsole()
     se_console.textChanged.connect(lambda: consoleChanged(se_console))
 
 
 def consoleChanged(self):
-    ''' This will be called every time the ScriptEditor Output text is changed '''
+    """This will be called every time the ScriptEditor Output text is changed"""
     for ks in config.all_knobscripters:
         try:
             console_text = self.document().toPlainText()
-            omit_se_console_text = ks.omit_se_console_text  # The text from the console that will be omitted
+            omit_se_console_text = (
+                ks.omit_se_console_text
+            )  # The text from the console that will be omitted
             ks_output = ks.script_output  # The console TextEdit widget
             if omit_se_console_text == "":
                 ks_text = console_text
             elif console_text.startswith(omit_se_console_text):
-                ks_text = str(console_text[len(omit_se_console_text):])
+                ks_text = str(console_text[len(omit_se_console_text) :])
             else:
                 ks_text = console_text
                 ks.omit_se_console_text = ""
             ks_output.setPlainText(ks_text)
-            ks_output.verticalScrollBar().setValue(ks_output.verticalScrollBar().maximum())
+            ks_output.verticalScrollBar().setValue(
+                ks_output.verticalScrollBar().maximum()
+            )
         except:
             pass
 
 
 def relistAllKnobScripterPanes():
-    """ Removes from config.all_knobscripters the panes that are closed. """
+    """Removes from config.all_knobscripters the panes that are closed."""
+
     def topParent(qwidget):
         parent = qwidget.parent()
         if not parent:
             return qwidget
         else:
             return topParent(parent)
+
     for ks in config.all_knobscripters:
         if ks.isPane:
             if topParent(ks).metaObject().className() != "Foundry::UI::DockMainWindow":
@@ -186,7 +202,10 @@ def getKnobScripter(knob_scripter=None, alternative=True):
         return ks
     elif len(config.all_knobscripters) and alternative:
         for widget in config.all_knobscripters:
-            if widget.metaObject().className() == 'KnobScripterPane' and widget.isVisible():
+            if (
+                widget.metaObject().className() == "KnobScripterPane"
+                and widget.isVisible()
+            ):
                 ks = widget
         if not ks:
             ks = config.all_knobscripters[-1]
@@ -197,7 +216,10 @@ def getKnobScripter(knob_scripter=None, alternative=True):
 
 
 def nk_saved_path():
-    return nuke.root().name().rsplit("_",1)[0] # Ignoring the version if it happens to be there. Doesn't hurt.
+    return (
+        nuke.root().name().rsplit("_", 1)[0]
+    )  # Ignoring the version if it happens to be there. Doesn't hurt.
+
 
 def clear_layout(layout):
     if layout is not None:

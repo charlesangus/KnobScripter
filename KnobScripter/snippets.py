@@ -23,15 +23,15 @@ import re
 import logging
 from functools import partial
 
-try:
-    if nuke.NUKE_VERSION_MAJOR < 11:
-        from PySide import QtCore, QtGui, QtGui as QtWidgets
-        from PySide.QtCore import Qt
-    else:
-        from PySide2 import QtWidgets, QtGui, QtCore
-        from PySide2.QtCore import Qt
-except ImportError:
-    from Qt import QtCore, QtGui, QtWidgets
+if nuke.NUKE_VERSION_MAJOR >= 16:
+    from PySide6 import QtCore, QtGui, QtWidgets
+    from PySide6.QtCore import Qt
+elif nuke.NUKE_VERSION_MAJOR < 11:
+    from PySide import QtCore, QtGui, QtGui as QtWidgets
+    from PySide.QtCore import Qt
+else:
+    from PySide2 import QtWidgets, QtGui, QtCore
+    from PySide2.QtCore import Qt
 
 from KnobScripter import ksscripteditor, config, dialogs, utils, widgets, content
 
@@ -209,7 +209,7 @@ class SnippetsWidget(QtWidgets.QWidget):
         filter_layout.addStretch()
         self.reload_button = QtWidgets.QPushButton("Reload")
         self.reload_button.clicked.connect(self.reload)
-        filter_layout.setMargin(0)
+        filter_layout.setContentsMargins(0, 0, 0, 0)
         filter_layout.addWidget(self.reload_button)
 
         self.filter_widget.setLayout(filter_layout)
@@ -220,7 +220,12 @@ class SnippetsWidget(QtWidgets.QWidget):
         # 2.1. Inner scroll content
         self.scroll_content = QtWidgets.QWidget()
         self.scroll_layout = QtWidgets.QVBoxLayout()
-        self.scroll_layout.setMargin(0)
+        self.scroll_layout.setContentsMargins(QtCore.QMargins(0, 0, 0, 0))
+        self.scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self.scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.scroll_content.setContentsMargins(QtCore.QMargins(0, 0, 8, 0))
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding, QtWidgets.QSizePolicy.Policy.MinimumExpanding)
         self.scroll_layout.addStretch()
         self.scroll_content.setLayout(self.scroll_layout)
         self.scroll_content.setContentsMargins(0, 0, 8, 0)

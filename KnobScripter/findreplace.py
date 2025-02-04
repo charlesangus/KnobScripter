@@ -7,15 +7,15 @@ adrianpueyo.com
 
 import nuke
 
-try:
-    if nuke.NUKE_VERSION_MAJOR < 11:
-        from PySide import QtCore, QtGui, QtGui as QtWidgets
-        from PySide.QtCore import Qt
-    else:
-        from PySide2 import QtWidgets, QtGui, QtCore
-        from PySide2.QtCore import Qt
-except ImportError:
-    from Qt import QtCore, QtGui, QtWidgets
+if nuke.NUKE_VERSION_MAJOR >= 16:
+    from PySide6 import QtCore, QtGui, QtWidgets
+    from PySide6.QtCore import Qt
+elif nuke.NUKE_VERSION_MAJOR < 11:
+    from PySide import QtCore, QtGui, QtGui as QtWidgets
+    from PySide.QtCore import Qt
+else:
+    from PySide2 import QtWidgets, QtGui, QtCore
+    from PySide2.QtCore import Qt
 
 
 class FindReplaceWidget(QtWidgets.QWidget):
@@ -105,10 +105,7 @@ class FindReplaceWidget(QtWidgets.QWidget):
         self.layout.addLayout(self.find_layout)
         self.layout.addLayout(self.replace_layout)
         self.layout.setSpacing(4)
-        if nuke.NUKE_VERSION_MAJOR >= 11:
-            self.layout.setMargin(2)
-        else:
-            self.layout.setContentsMargins(2, 2, 2, 2)
+        self.layout.setContentsMargins(2, 2, 2, 2)
         self.layout.addSpacing(4)
         self.layout.addWidget(line)
         self.setLayout(self.layout)
