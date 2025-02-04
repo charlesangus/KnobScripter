@@ -38,21 +38,23 @@ if os.name == "nt" and nuke.NUKE_VERSION_MAJOR < 13:
 
     os.symlink = symlink_ms
 
-try:
-    if nuke.NUKE_VERSION_MAJOR < 11:
-        from PySide import QtCore, QtGui, QtGui as QtWidgets
-        from PySide.QtCore import Qt
-    else:
-        from PySide2 import QtWidgets, QtGui, QtCore
-        from PySide2.QtCore import Qt
-except ImportError:
-    from Qt import QtCore, QtGui, QtWidgets
+if nuke.NUKE_VERSION_MAJOR >= 16:
+    from PySide6 import QtCore, QtGui, QtWidgets
+    from PySide6.QtCore import Qt
+elif nuke.NUKE_VERSION_MAJOR < 11:
+    from PySide import QtCore, QtGui, QtGui as QtWidgets
+    from PySide.QtCore import Qt
+    QtGui.QAction = QtWidgets.QAction
+    QtGui.QShortcut = QtWidgets.QShortcut
+else:
+    from PySide2 import QtWidgets, QtGui, QtCore
+    from PySide2.QtCore import Qt
+    QtGui.QAction = QtWidgets.QAction
+    QtGui.QShortcut = QtWidgets.QShortcut
 
 PrefsPanel = ""
 SnippetEditPanel = ""
 CodeGalleryPanel = ""
-now = datetime.datetime.now()
-christmas = (now.month == 12 and now.day > 15) or (now.month == 1 and now.day < 15)
 
 # ks imports
 from KnobScripter.info import __version__, __date__
@@ -374,7 +376,7 @@ class KnobScripterWidget(QtWidgets.QDialog):
         self.script_output.setReadOnly(1)
         self.script_output.setAcceptRichText(0)
         if config.prefs["se_tab_spaces"] != 0:
-            self.script_output.setTabStopWidth(self.script_output.tabStopWidth() / 4)
+            self.script_output.setTabStopDistance(self.script_output.tabStopDistance() / 4)
         self.script_output.setFocusPolicy(Qt.ClickFocus)
         self.script_output.setAutoFillBackground(0)
         self.script_output.installEventFilter(self)
@@ -387,7 +389,7 @@ class KnobScripterWidget(QtWidgets.QDialog):
         self.script_editor.cursorPositionChanged.connect(self.setTextSelection)
 
         if config.prefs["se_tab_spaces"] != 0:
-            self.script_editor.setTabStopWidth(
+            self.script_editor.setTabStopDistance(
                 config.prefs["se_tab_spaces"] * QtGui.QFontMetrics(config.script_editor_font).horizontalAdvance(' '))
 
         # Add input and output to splitter
@@ -454,29 +456,29 @@ class KnobScripterWidget(QtWidgets.QDialog):
     # Preferences submenus
     def createPrefsMenu(self):
         # Actions
-        self.echoAct = QtWidgets.QAction("Echo python commands", self, checkable=True,
+        self.echoAct = QtGui.QAction("Echo python commands", self, checkable=True,
                                          statusTip="Toggle nuke's 'Echo all python commands to ScriptEditor'",
                                          triggered=self.toggleEcho)
         if nuke.toNode("preferences").knob("echoAllCommands").value():
             self.echoAct.toggle()
-        self.runInContextAct = QtWidgets.QAction("Run in context (beta)", self, checkable=True,
+        self.runInContextAct = QtGui.QAction("Run in context (beta)", self, checkable=True,
                                                  statusTip="When inside a node, run the code replacing "
                                                            "nuke.thisNode() to the node's name, etc.",
                                                  triggered=self.toggleRunInContext)
         self.runInContextAct.setChecked(self.runInContext)
-        self.helpAct = QtWidgets.QAction("&User Guide (pdf)", self, statusTip="Open the KnobScripter 3 User Guide in your browser.",
+        self.helpAct = QtGui.QAction("&User Guide (pdf)", self, statusTip="Open the KnobScripter 3 User Guide in your browser.",
                                          shortcut="F1", triggered=self.showHelp)
-        self.videotutAct = QtWidgets.QAction("Video Tutorial", self, statusTip="Link to the KnobScripter 3 tutorial in your browser.",
+        self.videotutAct = QtGui.QAction("Video Tutorial", self, statusTip="Link to the KnobScripter 3 tutorial in your browser.",
                                          triggered=self.showVideotut)
-        self.nukepediaAct = QtWidgets.QAction("Show in Nukepedia", self,
+        self.nukepediaAct = QtGui.QAction("Show in Nukepedia", self,
                                               statusTip="Open the KnobScripter download page on Nukepedia.",
                                               triggered=self.showInNukepedia)
-        self.githubAct = QtWidgets.QAction("Show in GitHub", self, statusTip="Open the KnobScripter repo on GitHub.",
+        self.githubAct = QtGui.QAction("Show in GitHub", self, statusTip="Open the KnobScripter repo on GitHub.",
                                            triggered=self.showInGithub)
-        self.snippetsAct = QtWidgets.QAction("Snippets", self, statusTip="Open the Snippets editor.",
+        self.snippetsAct = QtGui.QAction("Snippets", self, statusTip="Open the Snippets editor.",
                                              triggered=lambda: self.open_multipanel(tab="snippet_editor"))
         self.snippetsAct.setIcon(QtGui.QIcon(os.path.join(config.ICONS_DIR, "icon_snippets.png")))
-        self.prefsAct = QtWidgets.QAction("Preferences", self, statusTip="Open the Preferences panel.",
+        self.prefsAct = QtGui.QAction("Preferences", self, statusTip="Open the Preferences panel.",
                                           triggered=lambda: self.open_multipanel(tab="ks_prefs"))
         self.prefsAct.setIcon(QtGui.QIcon(os.path.join(config.ICONS_DIR, "icon_prefs.png")))
 
@@ -532,21 +534,21 @@ class KnobScripterWidget(QtWidgets.QDialog):
 
         # Actions
         # TODO On opening the blink menu, show the .blink file name (../name.blink) in grey and update the checkboxes
-        self.blink_autoSave_act = QtWidgets.QAction("Auto-save to disk on compile", self, checkable=True,
+        self.blink_autoSave_act = QtGui.QAction("Auto-save to disk on compile", self, checkable=True,
                                                     statusTip="Auto-save code backup on disk every time you save it",
                                                     triggered=self.blink_toggle_autosave_action)
         self.blink_autoSave_act.setChecked(config.prefs["ks_blink_autosave_on_compile"])
-        # self.blinkBackups_createFile_act = QtWidgets.QAction("Create .blink scratch file",
-        self.blink_load_act = QtWidgets.QAction("Load .blink", self, statusTip="Load the .blink code.",
+        # self.blinkBackups_createFile_act = QtGui.QAction("Create .blink scratch file",
+        self.blink_load_act = QtGui.QAction("Load .blink", self, statusTip="Load the .blink code.",
                                                 triggered=self.blink_load_triggered)
-        self.blink_save_act = QtWidgets.QAction("Save .blink", self, statusTip="Save the .blink code.",
+        self.blink_save_act = QtGui.QAction("Save .blink", self, statusTip="Save the .blink code.",
                                                 triggered=self.blink_save_triggered)
-        self.blink_versionup_act = QtWidgets.QAction("Version Up", self, statusTip="Version up the .blink file.",
+        self.blink_versionup_act = QtGui.QAction("Version Up", self, statusTip="Version up the .blink file.",
                                                      triggered=self.blink_versionup_triggered)
-        self.blink_browse_act = QtWidgets.QAction("Browse...", self, statusTip="Browse to the blink file's directory.",
+        self.blink_browse_act = QtGui.QAction("Browse...", self, statusTip="Browse to the blink file's directory.",
                                                   triggered=self.blink_browse_action)
 
-        self.blink_filename_info_act = QtWidgets.QAction("No file specified.", self,
+        self.blink_filename_info_act = QtGui.QAction("No file specified.", self,
                                                          statusTip="Displays the filename specified "
                                                                    "in the kernelSourceFile knob.")
         self.blink_filename_info_act.setEnabled(False)
@@ -2074,7 +2076,7 @@ class KnobScripterWidget(QtWidgets.QDialog):
 class KnobScripterPane(KnobScripterWidget):
     def __init__(self):
         super(KnobScripterPane, self).__init__(is_pane=True, _parent=QtWidgets.QApplication.activeWindow())
-        ctrl_s_shortcut = QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+S"), self)
+        ctrl_s_shortcut = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+S"), self)
         ctrl_s_shortcut.activatedAmbiguously.connect(self.saveClicked)
 
     def showEvent(self, the_event):
@@ -2115,10 +2117,6 @@ class MultiPanel(QtWidgets.QDialog):
         self.lang = lang
 
         self.initUI()
-        # Christmas mode...
-        if christmas:
-            from KnobScripter import letItSnow  # Nice one, Fynn Laue...
-            # self.letItSnow = letItSnow.LetItSnow(parent=self)
         self.setWindowIcon(QtGui.QIcon(config.KS_ICON_PATH))
         self.set_tab(initial_tab)
         self.set_lang(self.lang)

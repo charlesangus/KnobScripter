@@ -9,18 +9,19 @@ They did an awesome job, so credits to them. I only needed to make some modifica
 adrianpueyo.com
 
 """
+import re
 
 import nuke
 
-try:
-    if nuke.NUKE_VERSION_MAJOR < 11:
-        from PySide import QtCore, QtGui, QtGui as QtWidgets
-        from PySide.QtCore import Qt
-    else:
-        from PySide2 import QtWidgets, QtGui, QtCore
-        from PySide2.QtCore import Qt
-except ImportError:
-    from Qt import QtCore, QtGui, QtWidgets
+if nuke.NUKE_VERSION_MAJOR >= 16:
+    from PySide6 import QtCore, QtGui, QtWidgets
+    from PySide6.QtCore import Qt
+elif nuke.NUKE_VERSION_MAJOR < 11:
+    from PySide import QtCore, QtGui, QtGui as QtWidgets
+    from PySide.QtCore import Qt
+else:
+    from PySide2 import QtWidgets, QtGui, QtCore
+    from PySide2.QtCore import Qt
 
 
 class KSPythonHighlighter(QtGui.QSyntaxHighlighter):
@@ -145,11 +146,11 @@ class KSPythonHighlighter(QtGui.QSyntaxHighlighter):
         singletons = ['True', 'False', 'None']
 
         if 'comment' in styles:
-            tri_single = (QtCore.QRegExp("'''"), 1, styles['comment'])
-            tri_double = (QtCore.QRegExp('"""'), 2, styles['comment'])
+            tri_single = (re.compile("'''"), 1, styles['comment'])
+            tri_double = (re.compile('"""'), 2, styles['comment'])
         else:
-            tri_single = (QtCore.QRegExp("'''"), 1, base_format)
-            tri_double = (QtCore.QRegExp('"""'), 2, base_format)
+            tri_single = (re.compile("'''"), 1, base_format)
+            tri_double = (re.compile('"""'), 2, base_format)
 
         # 2. Rules
         rules = []
@@ -212,8 +213,8 @@ class KSPythonHighlighter(QtGui.QSyntaxHighlighter):
 
         # 3. Resulting dictionary
         result = {
-            "rules": [(QtCore.QRegExp(pat), index, fmt) for (pat, index, fmt) in rules],
-            # Build a QRegExp for each pattern
+            "rules": [(re.compile(pat), index, fmt) for (pat, index, fmt) in rules],
+            # Build a re.compile for each pattern
             "tri_single": tri_single,
             "tri_double": tri_double,
         }
@@ -245,17 +246,17 @@ class KSPythonHighlighter(QtGui.QSyntaxHighlighter):
         """
 
         for expression, nth, text_format in self.styles[self._style]["rules"]:
-            index = expression.indexIn(text, 0)
+            match = expression.search(text, 0)
 
-            while index >= 0:
+            while match:
                 # We actually want the index of the nth match
-                index = expression.pos(nth)
-                length = len(expression.cap(nth))
+                index = match.start(nth)
+                length = match.end(nth) - match.start(nth)
                 try:
                     self.setFormat(index, length, text_format)
                 except:
                     return False
-                index = expression.indexIn(text, index + length)
+                match = expression.search(text, match.end(nth))
 
         self.setCurrentBlockState(0)
 
@@ -283,17 +284,19 @@ class KSPythonHighlighter(QtGui.QSyntaxHighlighter):
             add = 0
         # Otherwise, look for the delimiter on this line
         else:
-            start = delimiter.indexIn(text)
+            match = delimiter.search(text)
+            start = match.start() if match else -1
             # Move past this match
-            add = delimiter.matchedLength()
+            add = len(match.group()) if match else 0
 
         # As long as there's a delimiter match on this line...
         while start >= 0:
             # Look for the ending delimiter
-            end = delimiter.indexIn(text, start + add)
+            match = delimiter.search(text, start + add)
+            end = match.start() if match else -1
             # Ending delimiter on this line?
             if end >= add:
-                length = end - start + add + delimiter.matchedLength()
+                length = end - start + add + len(match.group())
                 self.setCurrentBlockState(0)
             # No; multi-line string
             else:
@@ -302,7 +305,8 @@ class KSPythonHighlighter(QtGui.QSyntaxHighlighter):
             # Apply formatting
             self.setFormat(start, length, style)
             # Look for the next match
-            start = delimiter.indexIn(text, start + length)
+            match = delimiter.search(text, start + length)
+            start = match.start() if match else -1
 
         # Return True if still inside a multi-line string, False otherwise
         if self.currentBlockState() == in_state:

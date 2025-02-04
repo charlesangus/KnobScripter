@@ -15,15 +15,15 @@ import nuke
 from KnobScripter.info import __version__, __author__, __date__
 from KnobScripter import config, widgets, utils
 
-try:
-    if nuke.NUKE_VERSION_MAJOR < 11:
-        from PySide import QtCore, QtGui, QtGui as QtWidgets
-        from PySide.QtCore import Qt
-    else:
-        from PySide2 import QtWidgets, QtGui, QtCore
-        from PySide2.QtCore import Qt
-except ImportError:
-    from Qt import QtCore, QtGui, QtWidgets
+if nuke.NUKE_VERSION_MAJOR >= 16:
+    from PySide6 import QtCore, QtGui, QtWidgets
+    from PySide6.QtCore import Qt
+elif nuke.NUKE_VERSION_MAJOR < 11:
+    from PySide import QtCore, QtGui, QtGui as QtWidgets
+    from PySide.QtCore import Qt
+else:
+    from PySide2 import QtWidgets, QtGui, QtCore
+    from PySide2.QtCore import Qt
 
 
 def load_prefs():
@@ -92,7 +92,7 @@ class PrefsWidget(QtWidgets.QWidget):
         # 1. Title (name, version)
         self.title_widget = QtWidgets.QWidget()
         self.title_layout = QtWidgets.QHBoxLayout()
-        self.title_layout.setMargin(0)
+        self.title_layout.setContentsMargins(0, 0, 0, 0)
         title_label = QtWidgets.QLabel("KnobScripter v" + __version__)
         title_label.setStyleSheet("font-weight:bold;color:#CCCCCC;font-size:20px;")
         built_label = QtWidgets.QLabel('<i style="color:#777">Built {0}</i>'.format(__date__))
@@ -137,7 +137,7 @@ class PrefsWidget(QtWidgets.QWidget):
         # 2.1. Inner scroll content
         self.scroll_content = QtWidgets.QWidget()
         self.scroll_layout = QtWidgets.QVBoxLayout()
-        self.scroll_layout.setMargin(0)
+        self.scroll_layout.setContentsMargins(0, 0, 0, 0)
 
         self.scroll_content.setLayout(self.scroll_layout)
         self.scroll_content.setContentsMargins(0, 0, 8, 0)
@@ -176,7 +176,7 @@ class PrefsWidget(QtWidgets.QWidget):
         self.window_size_box = QtWidgets.QFrame()
         self.window_size_box.setContentsMargins(0, 0, 0, 0)
         window_size_layout = QtWidgets.QHBoxLayout()
-        window_size_layout.setMargin(0)
+        window_size_layout.setContentsMargins(0, 0, 0, 0)
         self.window_size_w_box = QtWidgets.QSpinBox()
         self.window_size_w_box.setValue(config.prefs["ks_default_size"][0])
         self.window_size_w_box.setMinimum(200)
@@ -203,7 +203,7 @@ class PrefsWidget(QtWidgets.QWidget):
         self.knob_editor_state_box = QtWidgets.QFrame()
         self.knob_editor_state_box.setContentsMargins(0, 0, 0, 0)
         knob_editor_state_layout = QtWidgets.QHBoxLayout()
-        knob_editor_state_layout.setMargin(0)
+        knob_editor_state_layout.setContentsMargins(0, 0, 0, 0)
         self.save_knob_editor_state_combobox = QtWidgets.QComboBox()
         self.save_knob_editor_state_combobox.setToolTip("Save script editor state on knobs? "
                                                         "(which knob is open in editor, cursor pos, scroll values)\n"
@@ -223,7 +223,7 @@ class PrefsWidget(QtWidgets.QWidget):
         self.py_editor_state_box = QtWidgets.QFrame()
         self.py_editor_state_box.setContentsMargins(0, 0, 0, 0)
         py_editor_state_layout = QtWidgets.QHBoxLayout()
-        py_editor_state_layout.setMargin(0)
+        py_editor_state_layout.setContentsMargins(0, 0, 0, 0)
         self.save_py_editor_state_combobox = QtWidgets.QComboBox()
         self.save_py_editor_state_combobox.setToolTip("Save script editor state on .py scripts? "
                                                         "(which script is open in editor, cursor pos, scroll values)\n"
